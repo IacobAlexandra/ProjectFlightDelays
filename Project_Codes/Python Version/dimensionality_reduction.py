@@ -175,3 +175,13 @@ def execute_dimensionality_reduction(df):
 
     # 3. Run and plot UMAP
     run_and_plot_umap(x_scaled, df_features)
+
+
+file_path = '../../Project_Datasets/removed_outliers_data.csv'
+df = pd.read_csv(file_path)
+
+# Run the entire dimensionality reduction pipeline (Scaling, PCA, and UMAP)
+execute_dimensionality_reduction(df)
+
+output_filename = '../Project_Datasets/scaled_data.csv'
+df.to_csv(output_filename, index=False)

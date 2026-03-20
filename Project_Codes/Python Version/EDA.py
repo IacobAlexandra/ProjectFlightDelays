@@ -104,7 +104,6 @@ def plot_executive_profile(df, categorical_col, top_n=15, plot_color='steelblue'
     plt.tight_layout(pad=4.0)
     plt.show()
 
-
 def plot_categorical_boxplots(df):
     # Creates a 'Small Multiples' Grid Chart of Boxplots to show the statistical
     # spread of our elite continuous features, grouped by Flight Haul Type.
@@ -124,23 +123,25 @@ def plot_categorical_boxplots(df):
     fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(18, 10))
     axes = axes.flatten()
 
-    # 3. Create a smart 100k sample for Boxplots.
-    # Boxplots take a massive amount of computational power to draw 2.9 million outliers.
-    df_sample = df.sample(n=100000, random_state=42)
+    # 3. Create a smart sample for Boxplots.
+    # Boxplots take a massive amount of computational power to draw millions of outliers.
+    # This safely takes 100k rows, or the maximum available if the dataset is smaller!
+    sample_size = min(100000, len(df))
+    df_sample = df.sample(n=sample_size, random_state=42)
 
     # 4. Loop through the features and plot them
     for i, (feature, title, ylabel) in enumerate(features_to_plot):
         ax = axes[i]
 
         sns.boxplot(
-            data=df,
+            data=df_sample,
             x='FLIGHT_HAUL_TYPE',
-            y='ARR_DELAY',  # (Update this dynamically in your loop if needed)
+            y=feature,                 # <--- FIX 1: Change 'ARR_DELAY' to the dynamic 'feature' variable!
             hue='FLIGHT_HAUL_TYPE',
             legend=False,
-            width=0.4,  # 1. Restores the slim, elegant boxes
-            flierprops=dict(marker='o', markerfacecolor='none', markeredgecolor='gray', markersize=5),
-            # 2. Restores the hollow outlier circles
+            palette='viridis',
+            width=0.4,                 # <--- FIX 2: Added this to make the boxes slim again
+            flierprops=dict(marker='o', markerfacecolor='none', markeredgecolor='gray', markersize=5), # <--- FIX 3: Restores hollow outlier dots
             ax=ax
         )
 
@@ -148,7 +149,7 @@ def plot_categorical_boxplots(df):
         if feature == 'ARR_DELAY':
             ax.set_ylim(-60, 300)
 
-            # Formatting
+        # Formatting
         ax.set_title(title, fontsize=14, pad=10, weight='bold')
         ax.set_xlabel('Flight Haul Type', fontsize=11)
         ax.set_ylabel(ylabel, fontsize=11)
@@ -157,10 +158,6 @@ def plot_categorical_boxplots(df):
 
     plt.tight_layout(pad=4.0)
     plt.show()
-
-file_path = '../../Project_Datasets/engineered_flights_data.csv'
-df = pd.read_csv(file_path)
-plot_categorical_boxplots(df)
 
 def plot_temporal_delay_trend(df, time_col, title, xlabel, xticks_range, line_color):
     """

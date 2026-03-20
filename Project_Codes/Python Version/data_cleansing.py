@@ -73,9 +73,9 @@ def remove_outliers_isolation_forest(df, features_list, contamination=0.05):
     # Drop NaNs so the model doesn't crash
     df_clean = df.dropna(subset=features_list).copy()
 
-    # 1. Create representative training sample
-    print("Sampling 200,000 rows for faster training...")
-    sample_df = df_clean.sample(n=200000, random_state=42)
+    # Safely take 200k rows, or the maximum available if the dataset is smaller!
+    sample_size = min(200000, len(df_clean))
+    sample_df = df_clean.sample(n=sample_size, random_state=42)
 
     # 2. Initialize Isolation Forest
     iso_forest = IsolationForest(
@@ -112,5 +112,3 @@ def run_data_cleansing_pipeline(df):
     df = handle_duplicates_and_logic(df)
     df = remove_irrelevant_and_leaky_features(df)
     return df
-
-
