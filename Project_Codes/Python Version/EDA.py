@@ -3,41 +3,44 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-def run_descriptive_statistics(df, target_features):
+def run_descriptive_statistics(df, target_features, output_file_name):
     """
     Provides a basic data overview and descriptive statistics
     strictly for the continuous features specified in the parameter list.
     """
     print("\n--- DESCRIPTIVE STATISTICS & DATA OVERVIEW ---")
 
-    # SAFETY CHECK: Ensure all requested columns actually exist in the dataset
-    missing_cols = [col for col in target_features if col not in df.columns]
-    if missing_cols:
-        print(f"WARNING: Cannot run stats. The following columns are missing: {missing_cols}")
-        print("Did you run the Feature Engineering pipeline first?")
-        return
-
-    # 1. Basic Summary Statistics (Count, Mean, Std, Min, Max, Quantiles)
-    print("\nBasic Summary Statistics:")
     # Force Pandas to show all columns and widen the display
     pd.set_option('display.max_columns', None)
     pd.set_option('display.width', 1000)
 
+    # 1. Basic Summary Statistics (Count, Mean, Std, Min, Max, Quantiles)
+    print("\nBasic Summary Statistics:")
     stats = df[target_features].describe().round(2)
-    stats[''] = stats.index  # Copies the left-hand labels to the far right
     print(stats)
 
     # 2. Variance (Measures data dispersion/spread)
     print("\nVariance:")
-    print(df[target_features].var().round(2))
+    variance = df[target_features].var().round(2)
+    print(variance)
+    stats.loc['variance'] = variance  # Append to main table
 
     # 3. Skewness (Measures symmetry)
     print("\nSkewness:")
-    print(df[target_features].skew().round(2))
+    skewness = df[target_features].skew().round(2)
+    print(skewness)
+    stats.loc['skewness'] = skewness  # Append to main table
 
     # 4. Kurtosis (Measures the shape/tails of the distribution)
     print("\nKurtosis:")
-    print(df[target_features].kurtosis().round(2))
+    kurtosis = df[target_features].kurtosis().round(2)
+    print(kurtosis)
+    stats.loc['kurtosis'] = kurtosis  # Append to main table
+
+    # Clean up the final combined table and save it
+    stats[''] = stats.index  # Copies the left-hand labels to the far right
+
+    stats.to_csv(rf'C:\Users\Jhonny999\PycharmProjects\ProjectFlightDelays\Output_Files\Descriptive_Statistics\{output_file_name}')
 
 def plot_executive_profile(df, categorical_col, top_n=15, plot_color='steelblue'):
     #  Creates a generalized 'Small Multiples' Grid Chart showing the operational profile
@@ -130,12 +133,14 @@ def plot_categorical_boxplots(df):
         ax = axes[i]
 
         sns.boxplot(
-            data=df_sample,
+            data=df,
             x='FLIGHT_HAUL_TYPE',
-            y='ARR_DELAY',
-            hue='FLIGHT_HAUL_TYPE',  # Add this (make sure it matches your x variable!)
-            legend=False,  # Add this so it doesn't print a redundant legend
-            palette='viridis',
+            y='ARR_DELAY',  # (Update this dynamically in your loop if needed)
+            hue='FLIGHT_HAUL_TYPE',
+            legend=False,
+            width=0.4,  # 1. Restores the slim, elegant boxes
+            flierprops=dict(marker='o', markerfacecolor='none', markeredgecolor='gray', markersize=5),
+            # 2. Restores the hollow outlier circles
             ax=ax
         )
 
@@ -153,6 +158,9 @@ def plot_categorical_boxplots(df):
     plt.tight_layout(pad=4.0)
     plt.show()
 
+file_path = '../../Project_Datasets/engineered_flights_data.csv'
+df = pd.read_csv(file_path)
+plot_categorical_boxplots(df)
 
 def plot_temporal_delay_trend(df, time_col, title, xlabel, xticks_range, line_color):
     """
