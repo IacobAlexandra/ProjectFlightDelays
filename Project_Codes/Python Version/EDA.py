@@ -4,10 +4,7 @@ import seaborn as sns
 
 
 def run_descriptive_statistics(df, target_features, output_file_name):
-    """
-    Provides a basic data overview and descriptive statistics
-    strictly for the continuous features specified in the parameter list.
-    """
+    """ Provides a basic data overview and descriptive statistics for the continuous features"""
     print("\n--- DESCRIPTIVE STATISTICS & DATA OVERVIEW ---")
 
     # Force Pandas to show all columns and widen the display
@@ -37,23 +34,21 @@ def run_descriptive_statistics(df, target_features, output_file_name):
     print(kurtosis)
     stats.loc['kurtosis'] = kurtosis  # Append to main table
 
-    # Clean up the final combined table and save it
-    stats[''] = stats.index  # Copies the left-hand labels to the far right
+    # Clean up the main table and save it to csv
+    stats[''] = stats.index  # Copies the labels to the far right
 
     stats.to_csv(rf'C:\Users\Jhonny999\PycharmProjects\ProjectFlightDelays\Output_Files\Descriptive_Statistics\{output_file_name}')
 
 def plot_executive_profile(df, categorical_col, top_n=15, plot_color='steelblue'):
-    #  Creates a generalized 'Small Multiples' Grid Chart showing the operational profile
-    # based on ANY categorical feature passed as a parameter.
-    # Dynamically prevents packed charts by filtering to the Top N largest categories.
+    """Creates a generalized Grid Chart of Bar Plots showing the operational profile
+     based on the categorical feature passed as parameter"""
 
-    # 1. THE SMART FILTER: Avoid the "Packed Chart" penalty
-    # If the category has hundreds of unique values (like Airports), it slices the top N.
-    # If it has fewer than N (like Airlines), it just keeps all of them.
+    # 1. If the category has hundreds of unique values (like Airports), it slices the top N.
+    # If it has fewer than N (like Airlines), keep all of them
     top_categories = df[categorical_col].value_counts().nlargest(top_n).index
     df_filtered = df[df[categorical_col].isin(top_categories)]
 
-    # 2. Define the 6 elite features to analyze
+    # 2. Define the 6 features to analyze
     features_to_plot = [
         ('ARR_DELAY', 'Target: Average Arrival Delay', 'Minutes'),
         ('SCHEDULED_SPEED', 'Aggressiveness: Scheduled Speed', 'Miles / Minute'),
@@ -63,35 +58,36 @@ def plot_executive_profile(df, categorical_col, top_n=15, plot_color='steelblue'
         ('AIRLINE_HUB_DOMINANCE', 'Monopoly: Hub Dominance', 'Ratio (0 to 1)')
     ]
 
-    # 3. CREATE THE GRID: 3 rows, 2 columns
+    # 3. Create the grid (3 rows, 2 columns)
     fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(15, 12))
     axes = axes.flatten()
 
-    # 4. Loop through the features and plot them on the grid
+    # 4. Loop through the features and plot them
     for i, (feature, title, ylabel) in enumerate(features_to_plot):
         ax = axes[i]
 
-        # Calculate sorting order based on mean (Descending) dynamically for the chosen category
+        # Calculate sorting order based on mean (descending) for the chosen category
         order = df_filtered.groupby(categorical_col)[feature].mean().sort_values(ascending=False).index
 
-        # Create the bar plot WITH Standard Deviation error bars
+        # Create the bar plot with Standard Deviation error bars (to show dispersion)
         sns.barplot(
             data=df_filtered,
             x=categorical_col,
             y=feature,
             color=plot_color,
-            errorbar='sd',  # Shows uncertainty/dispersion
+            errorbar='sd',
             capsize=0.1,
             err_kws={'linewidth': 1.5, 'color': 'black'},
             order=order,
             ax=ax
         )
 
-        # Add exact value labels to the top of the bars
+        # Add value labels to the top of the bars
         for container in ax.containers:
             ax.bar_label(container, fmt='%.2f', padding=15, color='black', size=10)
 
-        # Formatting: dynamically generate the X-axis label based on the parameter!
+        # Formatting
+        # Dynamically generate the X-axis label based on the parameter
         ax.set_title(title, fontsize=15, pad=12, weight='bold')
         ax.set_xlabel(categorical_col.replace('_', ' ').title(), fontsize=11)
         ax.set_ylabel(ylabel, fontsize=12)
@@ -100,16 +96,15 @@ def plot_executive_profile(df, categorical_col, top_n=15, plot_color='steelblue'
         # Remove top and right borders to reduce clutter
         sns.despine(ax=ax)
 
-    # Adjust overall spacing so titles and labels don't overlap
+    # Adjust spacing so titles and labels don't overlap
     plt.tight_layout(pad=4.0)
     plt.show()
 
 def plot_categorical_boxplots(df):
-    # Creates a 'Small Multiples' Grid Chart of Boxplots to show the statistical
-    # spread of our elite continuous features, grouped by Flight Haul Type.
+    """ Creates a Grid Chart of Boxplots to show the statistical
+    spread of the main continuous features, grouped by Flight Haul Type"""
 
-    # 1. Define the 6 continuous features to analyze
-    # Format: (Column_Name, Chart_Title, Y_Axis_Label)
+    # 1. Define the 6 features to analyze
     features_to_plot = [
         ('ARR_DELAY', 'Target: Arrival Delay Distribution', 'Minutes'),
         ('SCHEDULED_SPEED', 'Aggressiveness: Scheduled Speed', 'Miles / Min'),
@@ -119,13 +114,11 @@ def plot_categorical_boxplots(df):
         ('CRS_ELAPSED_TIME', 'Planning: Scheduled Duration', 'Minutes')
     ]
 
-    # 2. Create the Grid: 3 rows, 2 columns
+    # 2. Create the grid (3 rows, 2 columns)
     fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(18, 10))
     axes = axes.flatten()
 
-    # 3. Create a smart sample for Boxplots.
-    # Boxplots take a massive amount of computational power to draw millions of outliers.
-    # This safely takes 100k rows, or the maximum available if the dataset is smaller!
+    # 3. Take 100k rows or the maximum available if the dataset is smaller
     sample_size = min(100000, len(df))
     df_sample = df.sample(n=sample_size, random_state=42)
 
@@ -136,16 +129,16 @@ def plot_categorical_boxplots(df):
         sns.boxplot(
             data=df_sample,
             x='FLIGHT_HAUL_TYPE',
-            y=feature,                 # <--- FIX 1: Change 'ARR_DELAY' to the dynamic 'feature' variable!
+            y=feature,
             hue='FLIGHT_HAUL_TYPE',
             legend=False,
             palette='viridis',
-            width=0.4,                 # <--- FIX 2: Added this to make the boxes slim again
-            flierprops=dict(marker='o', markerfacecolor='none', markeredgecolor='gray', markersize=5), # <--- FIX 3: Restores hollow outlier dots
+            width=0.4,
+            flierprops=dict(marker='o', markerfacecolor='none', markeredgecolor='gray', markersize=5),
             ax=ax
         )
 
-        # Apply your zoom logic specifically for ARR_DELAY to see the IQR box clearly
+        # Apply zoom for ARR_DELAY to see the IQR boxes clearly
         if feature == 'ARR_DELAY':
             ax.set_ylim(-60, 300)
 
@@ -160,9 +153,9 @@ def plot_categorical_boxplots(df):
     plt.show()
 
 def plot_temporal_delay_trend(df, time_col, title, xlabel, xticks_range, line_color):
-    """
-    Generalized function to plot the average arrival delay over a specific time dimension.
-    """
+    """ Plots the average arrival delay over a specific time dimension"""
+
+    # Define plot size
     plt.figure(figsize=(10, 6))
 
     # Group data by the specified time column
@@ -183,16 +176,16 @@ def plot_temporal_delay_trend(df, time_col, title, xlabel, xticks_range, line_co
 
 
 def plot_delay_distribution(df):
-    """
-    Plots the frequency and density distribution of arrival delays.
-    """
+    """Plots the frequency and density distribution of arrival delays"""
+
+    # Define plot size
     plt.figure(figsize=(10, 6))
 
-    # Increase bins to 100 for finer detail in the zoomed area
+    # Increase bins to 100 for better detail in the zoomed area
     sns.histplot(data=df, x='ARR_DELAY', bins=100, kde=True, color='mediumpurple')
 
-    # Formatting and zoom
-    plt.xlim(-60, 300)
+    # Formatting
+    plt.xlim(-60, 300) # Zoom in
     plt.title('Distribution Shape: Frequency and Density of Arrival Delays', fontsize=14, pad=15)
     plt.xlabel('Arrival Delay (Minutes)')
     plt.ylabel('Frequency (Number of Flights)')
@@ -201,13 +194,13 @@ def plot_delay_distribution(df):
 
 
 def plot_distance_vs_duration(df):
-    """
-    Plots a scatter plot to show the linear correlation between flight distance
-    and scheduled duration.
-    """
+    """ Plots a Scatterplot to show the linear correlation between flight distance
+    and scheduled duration """
+
+    # Define the plot size
     plt.figure(figsize=(10, 6))
 
-    # Scatter with reduced alpha to handle overplotting
+    # Create the Scatterplot
     sns.scatterplot(data=df, x='DISTANCE', y='CRS_ELAPSED_TIME',
                     alpha=0.1, s=10, color='dodgerblue')
 
@@ -216,63 +209,80 @@ def plot_distance_vs_duration(df):
     plt.xlabel('Flight Distance (Miles)')
     plt.ylabel('Scheduled Elapsed Time (Minutes)')
     sns.despine()
+
     plt.show()
 
 
 def plot_executive_bubble_chart(df):
-    # Generates an Executive Bubble Chart summarizing congestion vs. delay
-    # by airline, using flight volume as the bubble size.
+    """ Plots an Executive Bubble Chart of Traffic Volume vs. Delay by Origin Airport """
 
-    plt.figure(figsize=(12, 7))
+    # Safely sample to avoid crashing
+    sample_size = min(100000, len(df))
+    df_sample = df.sample(n=sample_size, random_state=42)
 
-    # Aggregate data by Airline to summarize the massive dataset
-    airline_stats = df.groupby('AIRLINE_CODE').agg({
-        'ROUTE_BOTTLENECK_INTERACTION': 'mean',
-        'ARR_DELAY': 'mean',
-        'ROUTE_FREQUENCY': 'count'  # Using count of flights for bubble size
-    }).reset_index()
+    # Aggregate data by Airport
+    airport_stats = df_sample.groupby('ORIGIN').agg(
+        Flight_Volume=('ORIGIN', 'count'),
+        Avg_Delay=('ARR_DELAY', 'mean'),
+        Avg_Distance=('DISTANCE', 'mean')
+    ).reset_index()
 
-    # Create the Bubble Chart
+    plt.figure(figsize=(14, 8))
+
+    # Keep only the Top 30 busiest airports to reduce clutter
+    airport_stats = airport_stats.nlargest(30, 'Flight_Volume').reset_index(drop=True)
+
     sns.scatterplot(
-        data=airline_stats,
-        x='ROUTE_BOTTLENECK_INTERACTION',
-        y='ARR_DELAY',
-        size='ROUTE_FREQUENCY',
-        sizes=(100, 2000),  # Minimum and maximum bubble sizes
-        hue='AIRLINE_CODE',
-        palette='tab20',
-        alpha=0.7,
-        edgecolor='black'
+        data=airport_stats,
+        x='Flight_Volume',
+        y='Avg_Delay',
+        size='Avg_Distance',
+        sizes=(100, 2000),
+        hue='ORIGIN',
+        alpha=0.6,
+        edgecolor='black',
+        legend=False
     )
 
-    # Add text labels inside/next to the bubbles for clarity
-    for i in range(len(airline_stats)):
-        plt.text(airline_stats['ROUTE_BOTTLENECK_INTERACTION'][i],
-                 airline_stats['ARR_DELAY'][i],
-                 airline_stats['AIRLINE_CODE'][i],
-                 horizontalalignment='center', size='small', color='black', weight='bold')
+    for i in range(airport_stats.shape[0]):
+        plt.text(
+                x=airport_stats.loc[i, 'Flight_Volume'],
+                y=airport_stats.loc[i, 'Avg_Delay'],
+                s=airport_stats.loc[i, 'ORIGIN'],
+                fontsize=9,
+                ha='center',
+                va='center',
+                weight='bold'
+            )
 
-    plt.title('Multivariate Summary: Congestion vs Delay by Airline Volume', fontsize=14, pad=15, weight='bold')
-    plt.xlabel('Average Route Bottleneck Score', fontsize=12)
+    # Formatting
+    plt.title(
+        'Traffic Characteristics: Flight Volume vs Delay by Airport (Sized by Avg Distance)',
+        fontsize=14,
+        weight='bold',
+        pad=15
+    )
+    plt.xlabel('Traffic Volume (Total Flights in Sample)', fontsize=12)
     plt.ylabel('Average Arrival Delay (Minutes)', fontsize=12)
-    plt.legend([], [], frameon=False)  # Hide the legend to reduce clutter
+
     sns.despine()
+    plt.tight_layout()
     plt.show()
 
-
 def plot_speed_violin_distribution(df):
-    # Generates a Violin Plot showing the density and shape of scheduled
-    # speeds across different flight haul types.
+    """Plots a Violin Plot showing the density and shape of scheduled
+     speeds across different flight haul types """
 
+    # Define plot size
     plt.figure(figsize=(10, 6))
 
-    # Shows the exact probability density shape of scheduled speeds
+    # Create the Violin Plot
     sns.violinplot(
         data=df,
         x='FLIGHT_HAUL_TYPE',
         y='SCHEDULED_SPEED',
-        hue='FLIGHT_HAUL_TYPE',  # <-- 1. Add this (make it identical to your x variable)
-        legend=False,  # <-- 2. Add this so it doesn't print a redundant legend
+        hue='FLIGHT_HAUL_TYPE',
+        legend=False,
         palette='magma'
     )
 
@@ -284,9 +294,8 @@ def plot_speed_violin_distribution(df):
 
 
 def plot_dominance_bubble(df):
-    # 2. Executive Bubble Chart
-    # Summarizes the same relationship, but aggregated by Airline to
-    # tell a high-level business story.
+    """ Plots an Executive Bubble Chart of
+    traffic congestion vs. delay by Airline, using flight volume as the bubble size """
 
     plt.figure(figsize=(12, 7))
 
@@ -327,15 +336,15 @@ def plot_dominance_bubble(df):
 
 
 def plot_frequency_vs_delay(df):
-    # Plots a sampled scatterplot to show the mathematical correlation
-    # between Route Frequency (Flight Volume) and Arrival Delay.
+    """ Plots a sampled Scatterplot to show the correlation
+    between Route Frequency (flight volume) and Arrival Delay """
 
-    # 1. Create a 100k sample to prevent PyCharm from freezing and avoid packed charts
+    # 1. Create a 100k sample
     df_sample = df.sample(n=100000, random_state=42)
 
     plt.figure(figsize=(10, 6))
 
-    # 2. Scatterplot with s=10 and alpha=0.1 to fix overplotting
+    # 2. Create Scatterplot
     sns.scatterplot(
         data=df_sample,
         x='ROUTE_FREQUENCY',
@@ -345,10 +354,10 @@ def plot_frequency_vs_delay(df):
         color='dodgerblue'
     )
 
-    # Zoom in specifically on the relevant delay spread, cutting out extreme outliers
+    # Zoom in on the relevant delay spread
     plt.ylim(-60, 300)
 
-    # Professional Formatting
+    # Formatting
     plt.title('Linear Correlation: Route Frequency vs. Arrival Delay', fontsize=14, pad=15, weight='bold')
     plt.xlabel('Route Frequency (Total Flights on this Route)', fontsize=12)
     plt.ylabel('Arrival Delay (Minutes)', fontsize=12)
@@ -358,15 +367,16 @@ def plot_frequency_vs_delay(df):
 
 
 def plot_congestion_vs_delay_grid(df):
+    """Plots a grid of Scatterplots to show the correlation
+    between the Airport Origin/Destination Congestion and the Arrival Delay"""
 
-    df_sample = df.sample(n=100000, random_state=42)
+    # Sample with replacement
+    df_sample = df.sample(n=100000, replace=True, random_state=42)
 
     # Create a 1x2 grid
     fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 6))
 
-    # -----------------------------------------------
     # LEFT CHART: Origin Congestion
-    # -----------------------------------------------
     sns.scatterplot(
         data=df_sample,
         x='ORIGIN_CONGESTION',
@@ -377,6 +387,7 @@ def plot_congestion_vs_delay_grid(df):
         ax=axes[0]
     )
 
+    # Formatting
     axes[0].set_ylim(-60, 300)
     axes[0].set_title('Origin Congestion vs. Arrival Delay', fontsize=14, weight='bold')
     axes[0].set_xlabel('Origin Congestion (Concurrent Departures)', fontsize=12)
@@ -384,9 +395,8 @@ def plot_congestion_vs_delay_grid(df):
 
     sns.despine(ax=axes[0])
 
-    # -----------------------------------------------
+
     # RIGHT CHART: Destination Congestion
-    # -----------------------------------------------
     sns.scatterplot(
         data=df_sample,
         x='DESTINATION_CONGESTION',
@@ -397,6 +407,7 @@ def plot_congestion_vs_delay_grid(df):
         ax=axes[1]
     )
 
+    # Formatting
     axes[1].set_ylim(-60, 300)
     axes[1].set_title('Destination Congestion vs. Arrival Delay', fontsize=14, weight='bold')
     axes[1].set_xlabel('Destination Congestion (Concurrent Arrivals)', fontsize=12)

@@ -1,24 +1,25 @@
 from scipy.stats import kruskal
 
-# =========================================================
-# PROCEDURAL FUNCTION: Kruskal-Wallis Test
-# =========================================================
+# ---------------------------------------
+# Kruskal-Wallis Test
+# ---------------------------------------
 def perform_kruskal_wallis(dataframe, group_col, target_col, alpha=0.05):
+    """Performs the Kruskal-Wallist test for Hypothesis Testing"""
 
     print(f"--- Kruskal-Wallis Test: {group_col} vs {target_col} ---")
 
-    # 1. Group the target variable by the grouping column
-    # This automatically creates a list of arrays for every unique category
+    # Group the target variable by the grouping column
+    # It creates a list of arrays for each category
     groups = [group[target_col].values for name, group in dataframe.groupby(group_col)]
 
-    # 2. Perform the test by unpacking the list of arrays using '*'
+    # 2. Perform the test  ('*' to unpack the list of arrays)
     stat, p_value = kruskal(*groups)
 
-    # 3. Print formatted results (2 decimals for stat, 4 for p-value)
+    # Print formatted results
     print(f"H-statistic: {stat:.2f}")
     print(f"P-value: {p_value:.4f}")
 
-    # 4. Interpret the results
+    # Interpret the results
     if p_value < alpha:
         print(f"Conclusion: Reject H0. '{group_col}' systematically impacts '{target_col}'.\n")
     else:
